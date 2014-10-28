@@ -36,22 +36,34 @@ var server = http.createServer(app)
 //Start the web socket server
 var io = socketio.listen(server);
 
-var users = {}
+var users = [];
 
 //If the client just connected
 io.sockets.on('connection', function(socket) {
 	io.sockets.emit("connectMsg", "USER HAS JOINED");
-	users.userId = socket.id;
-	console.log(users);
+	
+	// Add new user to user array
+	newUser = {
+		user: socket.id
+	};
+	users.push(newUser);
+	// send users array to client side
+	io.sockets.emit("joined", users);
 
 	socket.on("message", function(msg){
-		console.log(msg);
 		io.sockets.emit("message", msg);
 	})
 
+	// Send disconnect message and remove user from array and DOM
 	socket.on("disconnect", function(){
-		io.sockets.emit("disconnectMsg", "USER HAS LEFT");
-		
+		console.log("old", users);
+		for (var i = 0; i < users.length; i++) {
+			if (users[i].user === this.id) {
+				users.splice(i,1);
+				console.log("new:", users)
+			}
+		}
+		io.sockets.emit("disconnectMsg", "USER HAS LEFT", users);
 	});
 });
 
